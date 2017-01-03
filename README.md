@@ -6,26 +6,31 @@ This is an initial version of the ansible playbooks meant to accelerate developm
 
 ### These are the main playbooks that launch the services:
 
-`config-docker-api-node.yml` 
-`config-docker-intake-node.yml` 
-`config-logging-node.yml`
+`api/config-docker-api-node.yml` 
+`intake/config-docker-intake-node.yml` 
+`logging/config-logging-node.yml`
+`jenkins/config-jenkins-nodes.yml`
+`jenkins/config-jenkins-slaves.yml`
 
 ### These playbooks are called by the playbooks above:
 
-`deploy-docker-api.yml` 
-`deploy-docker-intake.yml` 
-`deploy-docker-log.yml` 
+`api/deploy-docker-api.yml` 
+`intake/deploy-docker-intake.yml` 
+`logging/deploy-docker-log.yml`
+`jenkins/deploy-jenkins.yml`
 
 ### These jinja2 templates are used by the playbooks above this:
 
-`docker-compose.api.yml.j2` 
-`docker-compose.intake.yml.j2` 
-`docker-compose.log.yml.j2` 
+`api/docker-compose.api.yml.j2` 
+`intake/docker-compose.intake.yml.j2` 
+`logging/docker-compose.log.yml.j2` 
+`jenkins/docker-compose.jenkins.yml.j2`
 
 ### These Jenkins files are used by Jenkins for building a pipeline
 
-`Jenkinsfile`
-`Jenkinsfile.api`
+`intake/Jenkinsfile`
+`api/Jenkinsfile.api`
+`jenkins/Jenkinsfile.jenkins`
 
 ### Variables:
 
@@ -46,27 +51,25 @@ intake_elasticsearch_url: <INSERT_INTAKE_ELASTICSEARCH_URL>
 
 `roles/`  Empty directory used by Ansible
 
-`99-docker.conf.j2`  Configuration file for docker logging
+`shared/99-docker.conf.j2`  Configuration file for docker logging
 
 `README.md` The contents of this file
 
-`add-datadog-agent.yml`  Ansible script to add DataDog to the current server
+`shared/add-datadog-agent.yml`  Ansible script to add DataDog to the current server
 
-`cleanup.yml`  Ansible script that performs a cleanup of the `./tmp/`
-
-`config-jenkins-nodes.yml` Ansible script to configure Jenkins node and install Jenkins
-
-`deploy-jenkins.yml`  Ansible script called by `config-jenkins-nodes.yml` to deploy Jenkins in Docker container
-
-`docker-compose.jenkins.yml.j2` jinja2 template of the docker compose file used to compose the docker containers needed for Jenkins
+`shared/cleanup.yml`  Ansible script that performs a cleanup of the `./tmp/`
 
 `hosts`  Here you configure the hosts that Ansible will run playbooks against.
 
 `hosts.sample` This is a template of the Ansible `hosts` file.
 
-`rsyslog.conf.j2` rsyslog configuration template. 
+`shared/rsyslog.conf.j2` rsyslog configuration template. 
 
 `tmp/` This file will be created and then destroyed (will contain secrets for SSL and AWS S3).
+
+`jenkins/Makefile` Script for manually configuring slave instances for Jenkins
+
+`jenkins/Makefile.settings` Support file for Makefile
 
 # Deployment
 
@@ -215,15 +218,15 @@ How do I find the image tag?
 
 8. Now run the following Ansible playbooks:
    ```
-    `ansible-playbook -i ./hosts config-logging-node.yml`
-    `ansible-playbook -i ./hosts config-docker-api-node.yml` (Note: You'll be prompted for your dockerhub credentials)
-    `ansible-playbook -i ./hosts config-docker-intake-node.yml` (Note: You'll be prompted for your dockerhub credentials) 
+    `ansible-playbook -i ./hosts ./logging/config-logging-node.yml`
+    `ansible-playbook -i ./hosts ./api/config-docker-api-node.yml` (Note: You'll be prompted for your dockerhub credentials)
+    `ansible-playbook -i ./hosts ./intake/config-docker-intake-node.yml` (Note: You'll be prompted for your dockerhub credentials) 
    ```
 
  (NOTE: The playbook will prompt you for your dockerhub login, password, and email.)
  (NOTE 2: If you want to deploy Jenkins and have followed the note in step 3, run the following Ansible playbook
  ```
- `ansible-playbook -i ./hosts config-jenkins-nodes.yml` (Note: You'll be prompted for your dockerhub credentials)
+ `ansible-playbook -i ./hosts ./jenkins/config-jenkins-nodes.yml` (Note: You'll be prompted for your dockerhub credentials)
  ```
 
 9. If you are on AWS:
