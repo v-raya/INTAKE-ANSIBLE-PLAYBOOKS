@@ -16,14 +16,14 @@
 
 - name: Generate "nginx.conf" from Ansible host on Jenkins instance to docker host
   template:
-    src: ./nginx/nginx.conf.j2
+    src: ../nginx/nginx.conf.j2
     dest: '{{ nginx_conf_fullpath }}'
 
 - name: Copy encrypted "nginx.crt" from Ansible host on Jenkins instance to docker host
-  copy: remote_src=False src=./tmp/nginx.crt dest={{ ssl_path }}/{{ ssl_crt_file }}
+  copy: remote_src=False src=../tmp/nginx.crt dest={{ ssl_path }}/{{ ssl_crt_file }}
 
 - name: Copy encrypted "nginx.key" from Ansible host on Jenkins instance to docker host
-  copy: remote_src=False src=./tmp/nginx.key dest={{ ssl_path }}/{{ ssl_key_file }}
+  copy: remote_src=False src=../tmp/nginx.key dest={{ ssl_path }}/{{ ssl_key_file }}
 
 - name: Down any existing containers and volumes
   command: docker-compose -f docker-compose.intake.yml --project-name={{ project_name }} down --remove-orphans
