@@ -1,4 +1,4 @@
----
+--- ### api playbook
 
 - hosts: jenkins-host
   connection: local
@@ -8,8 +8,6 @@
     baseurl: http://mirror.sfo12.us.leaseweb.net/epel//7Server/x86_64/
     gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
     secrets_bucket: accelerator-s3-secrets
-    ssl_key_file: mycasebook.key
-    ssl_crt_file: mycasebook.crt
 
   tasks:
 
@@ -35,33 +33,22 @@
 
   - name: Install boto
     pip: name=boto state=present
+    tags:
+      - local_dependencies
 
   - name: Ensure tmp directory exists
-    file: path=./tmp state=directory mode=777
-
-  - name: Copy nginx.key to local
-    s3:
-      bucket: '{{ secrets_bucket }}'
-      object: '{{ ssl_key_file }}'
-      dest: './tmp/nginx.key'
-      mode: get
-
-  - name: Copy nginx.crt to local
-    s3:
-      bucket: '{{ secrets_bucket }}'
-      object: '{{ ssl_crt_file }}'
-      dest: './tmp/nginx.crt'
-      mode: get
+    file: path=../tmp state=directory mode=777
 
   - name: Copy datadog key to local
     s3:
       bucket: '{{ secrets_bucket }}'
       object: 'dd-agent.key'
-      dest: './tmp/dd-agent.key'
+      dest: '../tmp/dd-agent.key'
       mode: get
 
-################################### intake
-- hosts: intake-node
+###################################
+
+- hosts: api-node
   connection: ssh
   user: ec2-user
   become: yes
@@ -70,7 +57,7 @@
   vars:
     baseurl: http://mirror.sfo12.us.leaseweb.net/epel//7Server/x86_64/
     gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
-    project_name: intake
+    project_name: api
     project_source: /home/ec2-user
 
   vars_prompt:
@@ -125,13 +112,13 @@
 
   - name: Generate rsyslog conf
     template:
-      src: ./rsyslog.conf.j2
+      src: ../shared/rsyslog.conf.j2
       dest: /etc/rsyslog.conf
     register: rsyslog_conf
 
   - name: Generate docker logging conf
     template:
-      src: ./99-docker.conf.j2
+      src: ../shared/99-docker.conf.j2
       dest: /etc/rsyslog.d/99-docker.conf
     register: rsyslog_logging_conf
 
@@ -159,17 +146,12 @@
     pip: name=docker-compose
 
   - name: Create a docker network
-    command: docker network create intake
+    command: docker network create api
     ignore_errors: True
 
-  - include: deploy-docker-intake.yml
+  - include: deploy-docker-api.yml
     vars:
-      project_name: app
-      ssl_key_file: nginx.key
-      ssl_crt_file: nginx.crt
-      ssl_path: /etc/nginx/ssl
-      nginx_conf_fullpath: /etc/nginx/nginx.conf
-      public_root: /ca_intake/public
+      project_name: api
 
   - name: Remove stopped containers older than a week
     shell: docker ps -a | awk '/Exited/ && /weeks ago/ {print "docker rm", $1}' | sh
@@ -180,8 +162,11 @@
   - name: Remove dangling volumes
     shell: docker volume ls -qf dangling=true | xargs -r docker volume rm
 
+#######################################
 
-- include: add-datadog-agent.yml
+- include: ../shared/add-datadog-agent.yml
   vars:
-    hosts: intake-node
-- include: cleanup.yml
+    hosts: api-node
+  tags: datadog
+
+- include: ../shared/cleanup.yml

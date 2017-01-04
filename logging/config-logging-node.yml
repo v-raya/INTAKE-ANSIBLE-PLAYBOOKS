@@ -1,5 +1,4 @@
 ---
-
 - hosts: jenkins-host
   connection: local
   gather_facts: no
@@ -9,8 +8,8 @@
     baseurl: http://mirror.sfo12.us.leaseweb.net/epel//7Server/x86_64/
     gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
     secrets_bucket: accelerator-s3-secrets
-    ssl_key_file: mycasebook.key
-    ssl_crt_file: mycasebook.crt
+    ssl_key_file: nginx.key
+    ssl_crt_file: nginx.crt
 
   tasks:
 
@@ -36,7 +35,7 @@
   - name: Ensure tmp directory exists
     file: path=./tmp state=directory mode=777
 
-  - name: Copy ssl certs from s3
+  - name: Copy nginx.crt to local
     s3:
       bucket: '{{ secrets_bucket }}'
       object: '{{ item }}'
@@ -45,7 +44,6 @@
     with_items:
     - '{{ ssl_crt_file }}'
     - '{{ ssl_key_file }}'
-    tags: nginx
 
   - name: Copy datadog key to local
     s3:
@@ -53,9 +51,10 @@
       object: 'dd-agent.key'
       dest: './tmp/dd-agent.key'
       mode: get
-    tags: s3
 
-- hosts: jenkins-node
+#####################################
+
+- hosts: logging-node
   connection: ssh
   user: ec2-user
   become: yes
@@ -64,21 +63,8 @@
   vars:
     baseurl: http://mirror.sfo12.us.leaseweb.net/epel//7Server/x86_64/
     gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
+    project_name: accelerator
     project_source: /home/ec2-user
-    docker_gid: 1200
-    docker_uid: 1200
-
-  vars_prompt:
-  - name: "username"
-    prompt: "Enter docker username"
-    private: no
-  - name: "email"
-    prompt: "Enter docker email"
-    private: no
-  - name: "password"
-    prompt: "Enter docker password"
-    private: yes
-
 
   pre_tasks:
   - name: Add EPEL repository
@@ -89,6 +75,14 @@
       gpgcheck: yes
       gpgkey: '{{ gpgkey }}'
 
+  - name: Add Adiscon (rsyslog) repository
+    yum_repository:
+      name: Adiscon
+      description: Adiscon YUM repo
+      baseurl: http://rpms.adiscon.com/v8-stable/epel-7/x86_64/
+      gpgcheck: yes
+      gpgkey: http://rpms.adiscon.com/RPM-GPG-KEY-Adiscon
+
   - name: install misc packages
     yum: name={{ item }} state=present
     with_items:
@@ -96,65 +90,54 @@
     - vim
     - wget
     - curl
-    - telnet
-
-  - name: Ensure group 'docker' exists
-    group: name=docker state=present gid={{ docker_gid }}
-
-  - name: Ensure the 'docker' user exists
-    user: name=docker group=docker state=present uid={{ docker_uid }}
-
+    - rsyslog
+    - rsyslog-elasticsearch
 
   roles:
   - dochang.docker
 
-
   post_tasks:
-  # This would restart docker (required) if any of the port changes. Beware, removing ports won't restart docker.
-  - name: Open up ports for http and https
-    iptables: state=present chain=INPUT source=0.0.0.0 protocol=tcp jump=ACCEPT destination_port={{ item }}
-    with_items:
-    - 80
-    - 443
-    register: iptables
-
-  - name: Restart docker of iptables changes
-    service: name=docker state=restarted
-    when: iptables.changed
+  - name: Ensure presence of directory /var/lib/rsyslog
+    file: name=/var/lib/rsyslog/ state=directory
 
   - name: Turn off SELinux
     selinux: policy=targeted state=permissive
 
+  - name: Generate rsyslog conf
+    template:
+      src: ../shared/rsyslog.conf.j2
+      dest: /etc/rsyslog.conf
+    register: rsyslog_conf
+
+  - name: Generate docker logging conf
+    template:
+      src: ../shared/99-docker.conf.j2
+      dest: /etc/rsyslog.d/99-docker.conf
+    register: rsyslog_logging_conf
+
+  - name: Restart rsyslog
+    service: name=rsyslog state=restarted
+    when: rsyslog_conf.changed or rsyslog_logging_conf.changed
+
+  - name: Ensure the users exists
+    user: name=i{{ item }} group=docker state=present
+    with_items:
+    - docker
+    - deploy
+    - ec2-user
+    - dd-agent
+
   - name: Install docker-compose via python pip
     pip: name=docker-compose
 
-  - name: Force installation of 'docker-py version 1.9.0'
-    shell: pip install 'docker-py==1.9.0' --force-reinstall
-
-  - name: Login to docker hub
-    docker_login:
-      username: '{{ username }}'
-      email: '{{ email }}'
-      password: '{{ password }}'
-
   - name: Create a docker network
-    command: docker network create ci
+    command: docker network create logging
     ignore_errors: True
 
-  - name: Deploy jenkins via "deploy-jenkins.yml", with specified variables
-    include: deploy-jenkins.yml
+  - include: deploy-docker-log.yml
     vars:
-      project_name: jenkins
-      ssl_key_file: mycasebook.key
-      ssl_crt_file: mycasebook.crt
-      ssl_path: /etc/nginx/ssl
-      nginx_conf_fullpath: /etc/nginx/nginx.conf
-      subdomain_name: ci.mycasebook.org
-    tags: jenkins
-
-  - include: add-datadog-agent.yml
-    vars:
-      hosts: jenkins-node
+      project_name: log
+    tags: log_app
 
   - name: Remove stopped containers older than a week
     shell: docker ps -a | awk '/Exited/ && /weeks ago/ {print "docker rm", $1}' | sh
@@ -165,8 +148,8 @@
   - name: Remove dangling volumes
     shell: docker volume ls -qf dangling=true | xargs -r docker volume rm
 
-- include: add-datadog-agent.yml
-  vars:
-    hosts: jenkins-node
+######################################
 
-- include: cleanup.yml
+- include: ../shared/add-datadog-agent.yml
+  vars:
+    hosts: logging-node
