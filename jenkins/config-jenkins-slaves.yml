@@ -1,0 +1,20 @@
+---
+
+- hosts: jenkins-node
+  connection: ssh
+  user: ec2-user
+  become: yes
+  gather_facts: yes
+
+  tasks:
+
+  - name: Update slave count
+    environment:
+      JENKINS_USERNAME: '{{ jenkinsUsername }}'
+      JENKINS_PASSWORD: '{{ jenkinsPassword }}'
+    docker_service:
+      project_src: ./
+      files: docker-compose.jenkins.yml
+      scale:
+        jenkins-slave: '{{ numSlaves }}'
+
