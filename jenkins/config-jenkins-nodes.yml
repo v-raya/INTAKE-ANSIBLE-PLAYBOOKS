@@ -106,7 +106,7 @@
 
 
   roles:
-  - dochang.docker
+  - { role: dochang.docker, docker_dockerpy_version: 1.10.6 }
 
 
   post_tasks:
@@ -125,11 +125,10 @@
   - name: Turn off SELinux
     selinux: policy=targeted state=permissive
 
-  - name: Install docker-compose via python pip
-    pip: name=docker-compose
-
-  - name: Force installation of 'docker-py version 1.9.0'
-    shell: pip install 'docker-py==1.9.0' --force-reinstall
+  - name: Install docker-compose 1.9.0 via python pip
+    pip:
+      name: docker-compose
+      version: 1.9.0
 
   - name: Login to docker hub
     docker_login:
