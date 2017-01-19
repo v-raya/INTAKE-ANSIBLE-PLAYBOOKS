@@ -94,7 +94,7 @@
     - rsyslog-elasticsearch
 
   roles:
-  - dochang.docker
+  - { role: dochang.docker, docker_dockerpy_version: 1.10.6 }
 
   post_tasks:
   - name: Ensure presence of directory /var/lib/rsyslog
@@ -127,8 +127,10 @@
     - ec2-user
     - dd-agent
 
-  - name: Install docker-compose via python pip
-    pip: name=docker-compose
+  - name: Install docker-compose 1.9.0 via python pip
+    pip:
+      name: docker-compose
+      version: 1.9.0
 
   - name: Create a docker network
     command: docker network create logging

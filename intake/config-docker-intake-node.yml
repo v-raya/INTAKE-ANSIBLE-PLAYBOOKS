@@ -113,7 +113,7 @@
     - rsyslog-elasticsearch
 
   roles:
-  - dochang.docker
+  - { role: dochang.docker, docker_dockerpy_version: 1.10.6 }
 
   post_tasks:
 
@@ -146,17 +146,16 @@
     - deploy
     - ec2-user
 
-  - name: Force installation of 'docker-py version 1.9.0'
-    shell: pip install 'docker-py==1.9.0' --force-reinstall
+  - name: Install docker-compose 1.9.0 via python pip
+    pip:
+      name: docker-compose
+      version: 1.9.0
 
   - name: Login to docker
     docker_login:
       username: '{{ username }}'
       email: '{{ email }}'
       password: '{{ password }}'
-
-  - name: Install docker-compose via python pip
-    pip: name=docker-compose
 
   - name: Create a docker network
     command: docker network create intake
