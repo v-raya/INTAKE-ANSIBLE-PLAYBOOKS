@@ -25,7 +25,6 @@ services:
       API_URL: "{{ api_url }}"
       RAILS_ENV: production
       SECRET_KEY_BASE: '{{ rails_secret_key_base.stdout }}'
-      ELASTICSEARCH_URL: '{{ intake_elasticsearch_url }}'
     networks:
       - intake
     logging:
