@@ -40,7 +40,6 @@ elasticsearch_log_server: <INSERT_IP_OR_SERVER_NAME>
 intake_image_tag: <INSERT_IMAGE_TAG_HERE>
 api_image_tag: <INSERT_IMAGE_TAG_HERE>
 api_url: <INSERT_API_URL>
-intake_elasticsearch_url: <INSERT_INTAKE_ELASTICSEARCH_URL>
  ```
 
 ### Other Misc Files:
@@ -153,7 +152,7 @@ If you are setting up the infrastructure for the first time, you will need to pr
 
 12. Create a vars file:`cp ./group_vars/all.sample ./group_vars/all`
 
-13. Now update the `./group_vars/all` file (Note: `intake_elasticsearch_url` and `elasticsearch_log_server` should point to the private IP on AWS. `intake_elasticsearch_url` specifically, is a tempoary solution until we figure out how search will be implemented with the partner): 
+13. Now update the `./group_vars/all` file (Note: `elasticsearch_log_server` should point to the private IP on AWS.): 
     ```
     vi ./group_vars/all`
     ```
@@ -162,7 +161,6 @@ If you are setting up the infrastructure for the first time, you will need to pr
     intake_image_tag: <INSERT_IMAGE_TAG>
     api_image_tag: <INSERT_IMAGE_TAG>
     api_url: <INSERT_API_URL>
-    intake_elasticsearch_url: <INSERT_INTAKE_ELASTICSEARCH_URL>
     ```
 How do I find the image tag?
    - intake_image_tag from [here](https://hub.docker.com/r/casecommons/intake_accelerator/tags/)
@@ -213,7 +211,6 @@ How do I find the image tag?
     intake_image_tag: <INSERT_IMAGE_TAG_HERE>
     api_image_tag: <INSERT_IMAGE_TAG_HERE>
     api_url: <INSERT_API_URL>
-    intake_elasticsearch_url: <INSERT_INTAKE_ELASTICSEARCH_URL>
     ``` 
 
 8. Now run the following Ansible playbooks:
@@ -309,7 +306,7 @@ Ensure the links all workd. Currently, the links available are:
 |AWS_SECRET_ACCESS_KEY|Password Parameter|`<Secret access key for AWS>`|This uses the Jenkins user AWS credentials|
 |AWS_DEFAULT_REGION|String Parameter|`<us-east-1>`||
 |HOSTS|Multi-line String Parameter|[ansible-host]<br/>127.0.0.1<br/><br/>[intake-node]<br/><IP of node to host intake>||
-|GROUP_VARS|Multi-line String Parameter|elasticsearch_log_server: <IP of elastic search log server (API server for now)><br/>api_url: http://api.mycasebook.org/<br/>intake_elasticsearch_url: <URL of elastic search server (port 9200 of API server for now)>||
+|GROUP_VARS|Multi-line String Parameter|elasticsearch_log_server: <IP of elastic search log server (API server for now)><br/>api_url: http://api.mycasebook.org/||
 |SSH_KEY|Credentials Parameter|`<Credential added to Jenkins with ID of ssh_private_key>`|Note: Credential type is Secret file but is not required|
 |DOCKER_CREDENTIALS|Credentials Parameter|`<Credentials that are able to access the casecommons/intake_accelerator images in dockerhub.>`|Note: Credential type is Username with password and is required. Credentials may need to be added to Jenkins credentials|
 |DOCKER_EMAIL|String Parameter|`<Email associated with DOCKER_CREDENTIALS>`||
@@ -369,7 +366,7 @@ In Jenkins (https://ci.myhcasebook.org), perform the following steps:
 
 2. Click Build with Parameters
 
-3. Verify intake-node (in HOSTS), api_url and intake_elasticsearch_url (in GROUP_VARS), and IMAGE_TAG are correct for this deployment
+3. Verify intake-node (in HOSTS), api_url (in GROUP_VARS), and IMAGE_TAG are correct for this deployment
 
 4. Click Build
 
