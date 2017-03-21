@@ -22,7 +22,6 @@ services:
     ports:
       - "8080:3000"
     environment:
-      TPT_API_URL: "{{ tpt_api_url }}"
       API_URL: "{{ api_url }}"
       RAILS_ENV: production
       SECRET_KEY_BASE: '{{ rails_secret_key_base.stdout }}'
