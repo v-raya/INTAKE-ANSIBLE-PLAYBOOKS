@@ -11,6 +11,8 @@ node('Slave') {
             withEnv(["AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}", 
                 "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}", 
                 "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}",
+                "AUTHENTICATION=${AUTHENTICATION}", 
+                "AUTHENTICATION_URL=${AUTHENTICATION_URL}", 
                 "DOCKER_EMAIL=${DOCKER_EMAIL}",
                 "DOCKER_IMAGE=${IMAGE_TAG}",
                 "ANSIBLE_HOST_KEY_CHECKING=False"
@@ -33,7 +35,7 @@ node('Slave') {
                     }
                     stage('Deploy') {
                         stage = 'Deploy'
-                        sh 'ansible-playbook -u ec2-user -i ./hosts --key-file=$KEY_FILE --skip-tags=local_dependencies --extra-vars="api_image_tag=$DOCKER_IMAGE username=$DOCKER_USER email=$DOCKER_EMAIL password=$DOCKER_PASSWORD" ./api/config-docker-api-node.yml'
+                        sh 'ansible-playbook -u ec2-user -i ./hosts --key-file=$KEY_FILE --skip-tags=local_dependencies --extra-vars="authentication=$AUTHENTICATION authentication_url=$AUTHENTICATION_URL api_image_tag=$DOCKER_IMAGE username=$DOCKER_USER email=$DOCKER_EMAIL password=$DOCKER_PASSWORD" ./api/config-docker-api-node.yml'
                     }
                 }
             }
