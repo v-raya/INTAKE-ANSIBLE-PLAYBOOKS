@@ -63,15 +63,13 @@
 ################################### intake
 - hosts: intake-node
   connection: ssh
-  user: ec2-user
+  user: ubuntu
   become: yes
-  gather_facts: yes
+  gather_facts: no
 
   vars:
-    baseurl: http://mirror.sfo12.us.leaseweb.net/epel//7Server/x86_64/
-    gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
     project_name: intake
-    project_source: /home/ec2-user
+    project_source: /home/ubuntu
 
   vars_prompt:
   - name: "username"
@@ -85,24 +83,14 @@
     private: yes
 
   pre_tasks:
-  - name: Add EPEL repository
-    yum_repository:
-      name: epel
-      description: EPEL YUM repo
-      baseurl: '{{ baseurl }}'
-      gpgcheck: yes
-      gpgkey: '{{ gpgkey }}'
-
-  - name: Add Adiscon (rsyslog) repository
-    yum_repository:
-      name: Adiscon
-      description: Adiscon YUM repo
-      baseurl: http://rpms.adiscon.com/v8-stable/epel-7/x86_64/
-      gpgcheck: yes
-      gpgkey: http://rpms.adiscon.com/RPM-GPG-KEY-Adiscon
+  - name: install python 2
+    raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+  
+  - name: gather facts
+    setup:
 
   - name: install misc packages
-    yum: name={{ item }} state=present
+    apt: name={{ item }} state=present
     with_items:
     - python-pip
     - vim
@@ -119,9 +107,6 @@
 
   - name: Ensure presence of directory /var/lib/rsyslog
     file: name=/var/lib/rsyslog/ state=directory
-
-  - name: Turn off SELinux
-    selinux: policy=targeted state=permissive
 
   - name: Generate rsyslog conf
     template:
@@ -144,7 +129,7 @@
     with_items:
     - docker
     - deploy
-    - ec2-user
+    - ubuntu
 
   - name: Install docker-compose 1.9.0 via python pip
     pip:

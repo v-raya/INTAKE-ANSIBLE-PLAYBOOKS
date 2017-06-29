@@ -35,7 +35,7 @@ node('Slave') {
                     }
                     stage('Deploy') {
                         stage = 'Deploy'
-                        sh 'ansible-playbook -u ec2-user -i ./hosts --key-file=$KEY_FILE --skip-tags=local_dependencies --extra-vars="authentication=$AUTHENTICATION authentication_url=$AUTHENTICATION_URL api_image_tag=$DOCKER_IMAGE username=$DOCKER_USER email=$DOCKER_EMAIL password=$DOCKER_PASSWORD" ./api/config-docker-api-node.yml'
+                        sh 'ansible-playbook -u ubuntu -i ./hosts --key-file=$KEY_FILE --skip-tags=local_dependencies --extra-vars="authentication=$AUTHENTICATION authentication_url=$AUTHENTICATION_URL api_image_tag=$DOCKER_IMAGE username=$DOCKER_USER email=$DOCKER_EMAIL password=$DOCKER_PASSWORD" ./api/config-docker-api-node.yml'
                     }
                 }
             }
