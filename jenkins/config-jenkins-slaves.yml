@@ -2,7 +2,7 @@
 
 - hosts: jenkins-node
   connection: ssh
-  user: ec2-user
+  user: ubuntu
   become: yes
   gather_facts: yes
 

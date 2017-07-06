@@ -57,14 +57,14 @@
 
 - hosts: jenkins-node
   connection: ssh
-  user: ec2-user
+  user: ubuntu
   become: yes
-  gather_facts: yes
+  gather_facts: no
 
   vars:
     baseurl: http://mirror.sfo12.us.leaseweb.net/epel//7Server/x86_64/
     gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
-    project_source: /home/ec2-user
+    project_source: /home/ubuntu
     docker_gid: 1200
     docker_uid: 1200
 
@@ -81,16 +81,14 @@
 
 
   pre_tasks:
-  - name: Add EPEL repository
-    yum_repository:
-      name: epel
-      description: EPEL YUM repo
-      baseurl: '{{ baseurl }}'
-      gpgcheck: yes
-      gpgkey: '{{ gpgkey }}'
+  - name: install python 2
+    raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+
+  - name: gather facts
+    setup:
 
   - name: install misc packages
-    yum: name={{ item }} state=present
+    apt: name={{ item }} state=present
     with_items:
     - python-pip
     - vim
@@ -122,13 +120,13 @@
     service: name=docker state=restarted
     when: iptables.changed
 
-  - name: Turn off SELinux
-    selinux: policy=targeted state=permissive
-
   - name: Install docker-compose 1.9.0 via python pip
     pip:
       name: docker-compose
       version: 1.9.0
+
+  - name: Put docker-py to version 1.9.0 for docker login
+    shell: pip install 'docker-py==1.9.0' --force-reinstall
 
   - name: Login to docker hub
     docker_login:
