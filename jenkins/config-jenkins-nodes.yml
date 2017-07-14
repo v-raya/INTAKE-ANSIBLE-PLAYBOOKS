@@ -102,6 +102,9 @@
   - name: Ensure the 'docker' user exists
     user: name=docker group=docker state=present uid={{ docker_uid }}
 
+  - user:
+      name: ubuntu
+      groups: docker
 
   roles:
   - { role: dochang.docker, docker_dockerpy_version: 1.10.6 }
