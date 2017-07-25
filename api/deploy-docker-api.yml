@@ -25,6 +25,3 @@
 
 - name: Run rake db migrate
   command: docker-compose -f docker-compose.api.yml --project-name={{ project_name }} run api bundle exec rake db:migrate
-
-- name: Run search reindex
-  command: docker-compose -f docker-compose.api.yml --project-name={{ project_name }} run api bundle exec rake search:migrate search:reindex
